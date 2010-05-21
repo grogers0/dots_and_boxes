@@ -107,6 +107,12 @@ void Board::set_move_decider(const std::string &solver)
         decider = &Board::decide_move_random;
     } else if (base == "first") {
         decider = &Board::decide_move_first;
+    } else if (base == "invalid") {
+        decider = &Board::decide_move_invalid;
+    } else if (base == "timeout") {
+        decider = &Board::decide_move_timeout;
+    } else if (base == "crash") {
+        exit(1);
     } else {
         fprintf(stderr, "dots solver run with command: %s, cannot decide which move decider to use\n", base.c_str());
         exit(1);

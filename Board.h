@@ -62,6 +62,8 @@ class Board
 
         Move decide_move_random();
         Move decide_move_first();
+        Move decide_move_invalid();
+        Move decide_move_timeout();
 
         friend Board read_board(FILE *fp);
 };

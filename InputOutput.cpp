@@ -2,6 +2,12 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cerrno>
+#include <stdexcept>
+
+#include <unistd.h>
+#include <fcntl.h>
+#include <poll.h>
 
 void Move::print(FILE *fp) const
 {
@@ -11,10 +17,32 @@ void Move::print(FILE *fp) const
 
 Move read_move(FILE *fp)
 {
-    Move move;
+    int fd = fileno(fp);
+
+    pollfd pev;
+    pev.fd = fd;
+    pev.events = POLLIN;
+    pev.revents = 0;
+
+    int pollret = poll(&pev, 1, 1000);
+    if (pollret == 0) {
+        throw std::runtime_error("took too long to move");
+    } else if (pollret == -1) {
+        printf("error poll'ing fd\n");
+        exit(1);
+    }
+
+    fcntl(fd, F_SETFL, O_NONBLOCK);
+    char buf[80] = {};
+    ssize_t nbytes = read(fd, buf, sizeof(buf) - 1);
+    fcntl(fd, F_SETFL, 0);
+
+    if (nbytes == 0)
+        throw std::runtime_error("exited early");
 
     char tmp;
-    fscanf(fp, "<%c,%d,%d>\n", &tmp, &move.x, &move.y);
+    Move move;
+    sscanf(buf, "<%c,%d,%d>\n", &tmp, &move.x, &move.y);
 
     if (tmp == 'h')
         move.dir = HORIZ;

@@ -5,7 +5,9 @@
 #include <cstdio>
 #include <cstring>
 #include <cerrno>
+
 #include <string>
+#include <stdexcept>
 
 #include <unistd.h>
 #include <pthread.h>
@@ -73,7 +75,7 @@ void spawn_child(const char *cmd, FILE *&child_stdin,
         move_fd(fd_stderr[1], STDERR_FILENO);
 
         if (execlp(cmd, cmd, (char*)0) == -1) {
-            fprintf(stderr, "Failed to execute \"%s\": %s\n",
+            printf("Failed to execute \"%s\": %s\n",
                     cmd, strerror(errno));
             exit(1);
         }
@@ -90,9 +92,32 @@ void *echo(void *args)
     return NULL;
 }
 
+void print_win_info(const Board &board, int winning_player = -1)
+{
+    int score[2] = {board.get_score(0), board.get_score(1)};
+
+    board.print(stdout);
+
+    if (winning_player == -1) {
+        if (score[0] > score[1]) {
+            winning_player = 0;
+        } else if (score[0] < score[1]) {
+            winning_player = 1;
+        } else {
+            printf("tie game! final score => player 1: %d, player 2: %d\n",
+                    score[0], score[1]);
+            return;
+        }
+    }
+
+    printf("player %d wins! final score => player 1: %d, player 2: %d\n",
+            winning_player + 1, score[0], score[1]);
+}
+
 int main(int argc, char **argv)
 {
     signal(SIGCHLD, SIG_IGN);
+    signal(SIGPIPE, SIG_IGN);
 
     parseArgs(argc, argv);
 
@@ -121,23 +146,25 @@ int main(int argc, char **argv)
         printf("player %d's turn...\n", player + 1);
 
         board.print(player_stdin[player], player);
-        fflush(player_stdin[player]);
 
-        // todo: time limit this
-        Move move = read_move(player_stdout[player]);
+        Move move;
+        try {
+            move = read_move(player_stdout[player]);
+        } catch (const std::exception &ex) {
+            printf("player %d is disqualified (%s)\n", player + 1, ex.what());
+            print_win_info(board, !player);
+            exit(0);
+        }
 
         if (!board.is_move_valid(move)) {
             printf("player %d is disqualified for making an invalid move: ", player + 1);
             move.print(stdout);
-            printf("player %d wins! final score: player 1: %d, player 2: %d\n",
-                    !player + 1, board.get_score(0), board.get_score(1));
-            exit(1);
+            print_win_info(board, !player);
+            exit(0);
         }
 
         same_player = board.move(player, move);
     }
 
-    board.print(stdout);
-    printf("player %d wins! final score: player 1: %d, player 2: %d\n",
-            player + 1, board.get_score(0), board.get_score(1));
+    print_win_info(board);
 }

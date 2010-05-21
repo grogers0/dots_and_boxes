@@ -42,3 +42,14 @@ Move Board::decide_move_first()
     }
     assert(false); // unreached
 }
+
+Move Board::decide_move_invalid()
+{
+    return Move(HORIZ, -1, -1);
+}
+
+Move Board::decide_move_timeout()
+{
+    usleep(3000000);
+    return decide_move_first();
+}
