@@ -20,19 +20,8 @@ bool Board::move(int player, const Edge &move)
 
     edges[edge_index(move)] = true;
 
-    if (move.dir == HORIZ) {
-        if (move.y > 0 && degree(Node(move.x, move.y - 1)) == 4)
-            ++score[player];
-
-        if (move.y < height && degree(Node(move.x, move.y)) == 4)
-            ++score[player];
-    } else {
-        if (move.x > 0 && degree(Node(move.x - 1, move.y)) == 4)
-            ++score[player];
-
-        if (move.x < width && degree(Node(move.x, move.y)) == 4)
-            ++score[player];
-    }
+    foreach_adjacent_node(move, [&] (const Node &node)
+            { if (this->degree(node) == 4) ++score[player]; });
 
     return oldscore != score[player];
 }
@@ -43,19 +32,8 @@ void Board::unmove(int player, const Edge &move)
 
     edges[edge_index(move)] = false;
 
-    if (move.dir == HORIZ) {
-        if (move.y > 0 && degree(Node(move.x, move.y - 1)) == 3)
-            --score[player];
-
-        if (move.y < height && degree(Node(move.x, move.y)) == 3)
-            --score[player];
-    } else {
-        if (move.x > 0 && degree(Node(move.x - 1, move.y)) == 3)
-            --score[player];
-
-        if (move.x < width && degree(Node(move.x, move.y)) == 3)
-            --score[player];
-    }
+    foreach_adjacent_node(move, [&] (const Node &node)
+            { if (this->degree(node) == 3) --score[player]; });
 }
 
 bool Board::is_move_valid(const Edge &move) const
@@ -63,14 +41,12 @@ bool Board::is_move_valid(const Edge &move) const
     if (move.dir == HORIZ) {
         if (move.x < 0 || move.x >= width || move.y < 0 || move.y > height)
             return false;
-
-        return !edges[edge_index(move)];
     } else {
         if (move.x < 0 || move.x > width || move.y < 0 || move.y >= height)
             return false;
-
-        return !edges[edge_index(move)];
     }
+
+    return !edges[edge_index(move)];
 }
 
 bool Board::is_game_over() const
@@ -80,10 +56,10 @@ bool Board::is_game_over() const
 
 int Board::degree(const Node &node) const
 {
-    return (int)edges[edge_index(Edge(HORIZ, node.x, node.y))] +
-        (int)edges[edge_index(Edge(HORIZ, node.x, node.y + 1))] +
-        (int)edges[edge_index(Edge(VERT, node.x, node.y))] +
-        (int)edges[edge_index(Edge(VERT, node.x + 1, node.y))];
+    int sum = 0;
+    foreach_adjacent_edge(node, [&] (const Edge &edge)
+            { sum += (int) edges[this->edge_index(edge)]; });
+    return sum;
 }
 
 

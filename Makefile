@@ -1,4 +1,4 @@
-CXXFLAGS=-O2 -g -Wall
+CXXFLAGS=-O2 -g -Wall -std=c++0x
 LINKFLAGS=-lpthread
 
 all: dots solver

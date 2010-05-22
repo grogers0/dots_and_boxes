@@ -2,6 +2,7 @@
 #include <cassert>
 
 #include <vector>
+#include <algorithm>
 
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -10,15 +11,9 @@
 Edge Board::decide_move_random()
 {
     std::vector<Edge> valid_moves;
-    for (Direction dir = DIR_MIN; dir < DIR_MAX; dir = (Direction)(dir + 1)) {
-        for (int x = 0; x <= width; ++x) {
-            for (int y = 0; y <= height; ++y) {
-                Edge move(dir, x, y);
-                if (is_move_valid(move))
-                    valid_moves.push_back(move);
-            }
-        }
-    }
+
+    std::for_each(edge_begin(), edge_end(), [&] (const Edge &edge)
+            { if (this->is_move_valid(edge)) valid_moves.push_back(edge); });
 
     int r = 0;
 
@@ -31,16 +26,10 @@ Edge Board::decide_move_random()
 
 Edge Board::decide_move_first()
 {
-    for (Direction dir = DIR_MIN; dir < DIR_MAX; dir = (Direction)(dir + 1)) {
-        for (int x = 0; x <= width; ++x) {
-            for (int y = 0; y <= height; ++y) {
-                Edge move(dir, x, y);
-                if (is_move_valid(move))
-                    return move;
-            }
-        }
-    }
-    assert(false); // unreached
+    EdgeIterator it = std::find_if(edge_begin(), edge_end(),
+            [&] (const Edge &edge)
+            { return this->is_move_valid(edge); });
+    return *it;
 }
 
 Edge Board::decide_move_invalid()
@@ -50,7 +39,7 @@ Edge Board::decide_move_invalid()
 
 Edge Board::decide_move_timeout()
 {
-    usleep(3000000);
+    usleep(1010000);
     return decide_move_first();
 }
 
@@ -61,15 +50,41 @@ Edge Board::decide_move_nocheap()
 {
     std::vector<Edge> take_square_moves, give_square_moves, other_moves;
 
-    for (Direction dir = DIR_MIN; dir < DIR_MAX; dir = (Direction)(dir + 1)) {
-        for (int x = 0; x <= width; ++x) {
-            for (int y = 0; y <= height; ++y) {
-                Edge move(dir, x, y);
-                if (!is_move_valid(move))
-                    continue;
+    std::for_each(edge_begin(), edge_end(), [&] (const Edge &edge)
+            {
+                if (!this->is_move_valid(edge))
+                    return;
+                bool take_square = false, give_square = false;
+                this->foreach_adjacent_node(edge, [&] (const Node &node)
+                    {
+                        switch (this->degree(node)) {
+                            case 3: take_square = true; break;
+                            case 2: give_square = true; break;
+                        }
+                    });
+                if (take_square) {
+                    take_square_moves.push_back(edge);
+                } else if (give_square) {
+                    give_square_moves.push_back(edge);
+                } else {
+                    other_moves.push_back(edge);
+                }
+            });
 
-#warning fixme
-            }
+    if (!take_square_moves.empty()) {
+        return take_square_moves.front();
+    } else {
+        int r = 0;
+
+        int fd = open("/dev/urandom", O_RDONLY);
+        read(fd, &r, sizeof(r));
+        close(fd);
+
+        if (!other_moves.empty()) {
+            return other_moves[r % other_moves.size()];
+        } else {
+            assert(!give_square_moves.empty());
+            return give_square_moves[r % give_square_moves.size()];
         }
     }
 }
