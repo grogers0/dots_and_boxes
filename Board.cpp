@@ -12,7 +12,7 @@ Board::Board(int width, int height) :
     score[0] = score[1] = 0;
 }
 
-bool Board::move(int player, const Edge &move)
+bool Board::move(int player, Edge move)
 {
     assert(is_move_valid(move));
 
@@ -20,23 +20,23 @@ bool Board::move(int player, const Edge &move)
 
     edges[edge_index(move)] = true;
 
-    foreach_adjacent_node(move, [&] (const Node &node)
+    for_each_adjacent_node(move, [&] (Node node)
             { if (this->degree(node) == 4) ++score[player]; });
 
     return oldscore != score[player];
 }
 
-void Board::unmove(int player, const Edge &move)
+void Board::unmove(int player, Edge move)
 {
     assert(!is_move_valid(move));
 
     edges[edge_index(move)] = false;
 
-    foreach_adjacent_node(move, [&] (const Node &node)
+    for_each_adjacent_node(move, [&] (Node node)
             { if (this->degree(node) == 3) --score[player]; });
 }
 
-bool Board::is_move_valid(const Edge &move) const
+bool Board::is_move_valid(Edge move) const
 {
     if (move.dir == HORIZ) {
         if (move.x < 0 || move.x >= width || move.y < 0 || move.y > height)
@@ -54,10 +54,10 @@ bool Board::is_game_over() const
     return std::count(edges.begin(), edges.end(), false) == 0;
 }
 
-int Board::degree(const Node &node) const
+int Board::degree(Node node) const
 {
     int sum = 0;
-    foreach_adjacent_edge(node, [&] (const Edge &edge)
+    for_each_adjacent_edge(node, [&] (Edge edge)
             { sum += (int) edges[this->edge_index(edge)]; });
     return sum;
 }

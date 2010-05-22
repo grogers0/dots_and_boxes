@@ -12,7 +12,7 @@ Edge Board::decide_move_random()
 {
     std::vector<Edge> valid_moves;
 
-    std::for_each(edge_begin(), edge_end(), [&] (const Edge &edge)
+    std::for_each(edge_begin(), edge_end(), [&] (Edge edge)
             { if (this->is_move_valid(edge)) valid_moves.push_back(edge); });
 
     int r = 0;
@@ -27,7 +27,7 @@ Edge Board::decide_move_random()
 Edge Board::decide_move_first()
 {
     EdgeIterator it = std::find_if(edge_begin(), edge_end(),
-            [&] (const Edge &edge)
+            [&] (Edge edge)
             { return this->is_move_valid(edge); });
     return *it;
 }
@@ -50,12 +50,12 @@ Edge Board::decide_move_nocheap()
 {
     std::vector<Edge> take_square_moves, give_square_moves, other_moves;
 
-    std::for_each(edge_begin(), edge_end(), [&] (const Edge &edge)
+    std::for_each(edge_begin(), edge_end(), [&] (Edge edge)
             {
                 if (!this->is_move_valid(edge))
                     return;
                 bool take_square = false, give_square = false;
-                this->foreach_adjacent_node(edge, [&] (const Node &node)
+                this->for_each_adjacent_node(edge, [&] (const Node &node)
                     {
                         switch (this->degree(node)) {
                             case 3: take_square = true; break;

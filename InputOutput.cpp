@@ -42,7 +42,11 @@ Edge read_edge(FILE *fp)
 
     char tmp;
     Edge move;
-    sscanf(buf, "(edge %c %d %d)\n", &tmp, &move.x, &move.y);
+    int x, y;
+    sscanf(buf, "(edge %c %d %d)\n", &tmp, &x, &y);
+
+    move.x = x;
+    move.y = y;
 
     if (tmp == 'h')
         move.dir = HORIZ;

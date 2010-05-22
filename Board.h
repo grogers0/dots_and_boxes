@@ -9,19 +9,18 @@
 enum Direction
 {
     HORIZ,
-    VERT,
-    DIR_MIN = HORIZ,
-    DIR_MAX = VERT + 1
+    VERT
 };
 
 struct Edge
 {
-    Direction dir;
-    int x, y;
+    signed x:8;
+    unsigned dir:1;
+    signed y:7;
 
-    Edge() : dir(HORIZ), x(-1), y(-1) {}
+    Edge() {}
     Edge(Direction dir, int x, int y) :
-        dir(dir), x(x), y(y) {}
+        x(x), dir(dir), y(y) {}
     bool operator==(const Edge &edge) const
     { return dir == edge.dir && x == edge.x && y == edge.y; }
     bool operator!=(const Edge &edge) const
@@ -34,14 +33,14 @@ Edge read_edge(FILE *fp);
 
 struct Node
 {
-    int x, y;
+    signed char x, y;
 
-    Node() : x(-1), y(-1) {}
+    Node() {}
     Node(int x, int y) : x(x), y(y) {}
 
-    bool operator==(const Node &node) const
+    bool operator==(Node node) const
     { return x == node.x && y == node.y; }
-    bool operator!=(const Node &node) const
+    bool operator!=(Node node) const
     { return x != node.x || y != node.y; }
 
     void print(FILE *fp) const;
@@ -56,11 +55,11 @@ class EdgeIterator
         typedef const Edge &reference;
         typedef std::forward_iterator_tag iterator_category;
 
-        EdgeIterator(const Edge &edge, int width, int height) :
+        EdgeIterator(Edge edge, int width, int height) :
             edge(edge), width(width), height(height) {}
 
-        const Edge &operator*() const { return edge; }
-        const Edge *operator->() const { return &edge; }
+        reference operator*() const { return edge; }
+        pointer operator->() const { return &edge; }
 
         EdgeIterator &operator++()
         {
@@ -114,7 +113,7 @@ class EdgeIterator
 class NodeIterator
 {
     public:
-        NodeIterator(const Node &node, int width) :
+        NodeIterator(Node node, int width) :
             node(node), width(width) {}
 
         const Node &operator*() const { return node; }
@@ -156,20 +155,20 @@ class Board
         int get_width() const { return width; }
         int get_height() const { return height; }
 
-        int edge_index(const Edge &edge) const;
+        int edge_index(Edge edge) const;
 
-        bool move(int player, const Edge &move);
-        void unmove(int player, const Edge &move);
-        bool is_move_valid(const Edge &move) const;
+        bool move(int player, Edge move);
+        void unmove(int player, Edge move);
+        bool is_move_valid(Edge move) const;
         bool is_game_over() const;
         int get_score(int player) const { return score[player]; }
 
-        int degree(const Node &node) const;
+        int degree(Node node) const;
 
-        template<class F> void foreach_adjacent_node(const Edge &e, F f) const;
-        template<class F> void foreach_adjacent_edge(const Node &n, F f) const;
-        template<class F> void foreach_edge(F f) const;
-        template<class F> void foreach_node(F f) const;
+        template<class F> void for_each_adjacent_node(Edge e, F f) const;
+        template<class F> void for_each_adjacent_edge(Node n, F f) const;
+        template<class F> void for_each_edge(F f) const;
+        template<class F> void for_each_node(F f) const;
 
         void print(FILE *fp, int player = 0) const;
 
@@ -209,7 +208,7 @@ class Board
 
 Board read_board(FILE *fp);
 
-inline int Board::edge_index(const Edge &edge) const
+inline int Board::edge_index(Edge edge) const
 {
     if (edge.dir == HORIZ)
         return edge.y * width + edge.x;
@@ -218,7 +217,7 @@ inline int Board::edge_index(const Edge &edge) const
 }
 
 template<class F>
-void Board::foreach_adjacent_edge(const Node &node, F f) const
+void Board::for_each_adjacent_edge(Node node, F f) const
 {
     f(Edge(HORIZ, node.x, node.y));
     f(Edge(HORIZ, node.x, node.y + 1));
@@ -227,7 +226,7 @@ void Board::foreach_adjacent_edge(const Node &node, F f) const
 }
 
 template<class F>
-void Board::foreach_adjacent_node(const Edge &edge, F f) const
+void Board::for_each_adjacent_node(Edge edge, F f) const
 {
     if (edge.dir == HORIZ) {
         if (edge.y > 0)
@@ -245,7 +244,7 @@ void Board::foreach_adjacent_node(const Edge &edge, F f) const
 }
 
 template<class F>
-void Board::foreach_edge(F f) const
+void Board::for_each_edge(F f) const
 {
     Edge edge;
 
@@ -265,7 +264,7 @@ void Board::foreach_edge(F f) const
 }
 
 template<class F>
-void Board::foreach_node(F f) const
+void Board::for_each_node(F f) const
 {
     Node node;
     for (node.x = 0; node.x < width; ++node.x) {
