@@ -12,68 +12,64 @@ Board::Board(int width, int height) :
     score[0] = score[1] = 0;
 }
 
-bool Board::move(int player, const Move &move)
+bool Board::move(int player, const Edge &move)
 {
     assert(is_move_valid(move));
 
     int oldscore = score[player];
 
-    if (move.dir == HORIZ) {
-        edges[horiz_edge_index(move.x, move.y, width, height)] = true;
+    edges[edge_index(move)] = true;
 
-        if (move.y > 0 && degree(move.x, move.y - 1) == 4)
+    if (move.dir == HORIZ) {
+        if (move.y > 0 && degree(Node(move.x, move.y - 1)) == 4)
             ++score[player];
 
-        if (move.y < height && degree(move.x, move.y) == 4)
+        if (move.y < height && degree(Node(move.x, move.y)) == 4)
             ++score[player];
     } else {
-        edges[vert_edge_index(move.x, move.y, width, height)] = true;
-
-        if (move.x > 0 && degree(move.x - 1, move.y) == 4)
+        if (move.x > 0 && degree(Node(move.x - 1, move.y)) == 4)
             ++score[player];
 
-        if (move.x < width && degree(move.x, move.y) == 4)
+        if (move.x < width && degree(Node(move.x, move.y)) == 4)
             ++score[player];
     }
 
     return oldscore != score[player];
 }
 
-void Board::unmove(int player, const Move &move)
+void Board::unmove(int player, const Edge &move)
 {
     assert(!is_move_valid(move));
 
-    if (move.dir == HORIZ) {
-        edges[horiz_edge_index(move.x, move.y, width, height)] = false;
+    edges[edge_index(move)] = false;
 
-        if (move.y > 0 && degree(move.x, move.y) == 3)
+    if (move.dir == HORIZ) {
+        if (move.y > 0 && degree(Node(move.x, move.y - 1)) == 3)
             --score[player];
 
-        if (move.y < height && degree(move.x, move.y + 1) == 3)
+        if (move.y < height && degree(Node(move.x, move.y)) == 3)
             --score[player];
     } else {
-        edges[vert_edge_index(move.x, move.y, width, height)] = false;
-
-        if (move.x > 0 && degree(move.x, move.y) == 3)
+        if (move.x > 0 && degree(Node(move.x - 1, move.y)) == 3)
             --score[player];
 
-        if (move.x < width && degree(move.x + 1, move.y) == 3)
+        if (move.x < width && degree(Node(move.x, move.y)) == 3)
             --score[player];
     }
 }
 
-bool Board::is_move_valid(const Move &move) const
+bool Board::is_move_valid(const Edge &move) const
 {
     if (move.dir == HORIZ) {
         if (move.x < 0 || move.x >= width || move.y < 0 || move.y > height)
             return false;
 
-        return !edges[horiz_edge_index(move.x, move.y, width, height)];
+        return !edges[edge_index(move)];
     } else {
         if (move.x < 0 || move.x > width || move.y < 0 || move.y >= height)
             return false;
 
-        return !edges[vert_edge_index(move.x, move.y, width, height)];
+        return !edges[edge_index(move)];
     }
 }
 
@@ -82,12 +78,12 @@ bool Board::is_game_over() const
     return std::count(edges.begin(), edges.end(), false) == 0;
 }
 
-int Board::degree(int x, int y) const
+int Board::degree(const Node &node) const
 {
-    return (int)edges[horiz_edge_index(x, y, width, height)] +
-        (int)edges[horiz_edge_index(x, y + 1, width, height)] +
-        (int)edges[vert_edge_index(x, y, width, height)] +
-        (int)edges[vert_edge_index(x + 1, y, width, height)];
+    return (int)edges[edge_index(Edge(HORIZ, node.x, node.y))] +
+        (int)edges[edge_index(Edge(HORIZ, node.x, node.y + 1))] +
+        (int)edges[edge_index(Edge(VERT, node.x, node.y))] +
+        (int)edges[edge_index(Edge(VERT, node.x + 1, node.y))];
 }
 
 
@@ -113,6 +109,8 @@ void Board::set_move_decider(const std::string &solver)
         decider = &Board::decide_move_timeout;
     } else if (base == "crash") {
         exit(1);
+    } else if (base == "nocheap") {
+        decider = &Board::decide_move_nocheap;
     } else {
         fprintf(stderr, "dots solver run with command: %s, cannot decide which move decider to use\n", base.c_str());
         exit(1);

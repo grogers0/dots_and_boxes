@@ -147,9 +147,9 @@ int main(int argc, char **argv)
 
         board.print(player_stdin[player], player);
 
-        Move move;
+        Edge move;
         try {
-            move = read_move(player_stdout[player]);
+            move = read_edge(player_stdout[player]);
         } catch (const std::exception &ex) {
             printf("player %d is disqualified (%s)\n", player + 1, ex.what());
             print_win_info(board, !player);

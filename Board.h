@@ -13,19 +13,29 @@ enum Direction
     DIR_MAX = VERT + 1
 };
 
-struct Move
+struct Edge
 {
     Direction dir;
     int x, y;
 
-    Move() : dir(HORIZ), x(-1), y(-1) {}
-    Move(Direction dir, int x, int y) :
+    Edge() : dir(HORIZ), x(-1), y(-1) {}
+    Edge(Direction dir, int x, int y) :
         dir(dir), x(x), y(y) {}
 
     void print(FILE *fp) const;
 };
 
-Move read_move(FILE *fp);
+Edge read_edge(FILE *fp);
+
+struct Node
+{
+    int x, y;
+
+    Node() : x(-1), y(-1) {}
+    Node(int x, int y) : x(x), y(y) {}
+
+    void print(FILE *fp) const;
+};
 
 class Board
 {
@@ -35,18 +45,20 @@ class Board
         int get_width() const { return width; }
         int get_height() const { return height; }
 
-        bool move(int player, const Move &move);
-        void unmove(int player, const Move &move);
-        bool is_move_valid(const Move &move) const;
+        int edge_index(const Edge &edge) const;
+
+        bool move(int player, const Edge &move);
+        void unmove(int player, const Edge &move);
+        bool is_move_valid(const Edge &move) const;
         bool is_game_over() const;
         int get_score(int player) const { return score[player]; }
 
-        int degree(int x, int y) const;
+        int degree(const Node &node) const;
 
         void print(FILE *fp, int player = 0) const;
 
         void set_move_decider(const std::string &);
-        Move decide_move() { return (this->*decider)(); }
+        Edge decide_move() { return (this->*decider)(); }
 
     private:
         Board() {}
@@ -58,26 +70,26 @@ class Board
         int width, height, score[2];
         std::vector<bool> edges; // true if filled
 
-        Move (Board::*decider)();
+        Edge (Board::*decider)();
 
-        Move decide_move_random();
-        Move decide_move_first();
-        Move decide_move_invalid();
-        Move decide_move_timeout();
+        Edge decide_move_random();
+        Edge decide_move_first();
+        Edge decide_move_invalid();
+        Edge decide_move_timeout();
+        Edge decide_move_nocheap();
 
         friend Board read_board(FILE *fp);
 };
 
 Board read_board(FILE *fp);
 
-inline int horiz_edge_index(int x, int y, int width, int height)
+inline int Board::edge_index(const Edge &edge) const
 {
-    return y * width + x;
+    if (edge.dir == HORIZ)
+        return edge.y * width + edge.x;
+    else
+        return width * (height + 1) + edge.y * (width + 1) + edge.x;
 }
 
-inline int vert_edge_index(int x, int y, int width, int height)
-{
-    return width * (height + 1) + y * (width + 1) + x;
-}
 
 #endif

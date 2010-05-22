@@ -9,13 +9,13 @@
 #include <fcntl.h>
 #include <poll.h>
 
-void Move::print(FILE *fp) const
+void Edge::print(FILE *fp) const
 {
-    fprintf(fp, "<%c,%d,%d>\n", dir == HORIZ ? 'h' : 'v', x, y);
+    fprintf(fp, "(edge %c %d %d)\n", dir == HORIZ ? 'h' : 'v', x, y);
     fflush(fp);
 }
 
-Move read_move(FILE *fp)
+Edge read_edge(FILE *fp)
 {
     int fd = fileno(fp);
 
@@ -41,8 +41,8 @@ Move read_move(FILE *fp)
         throw std::runtime_error("exited early");
 
     char tmp;
-    Move move;
-    sscanf(buf, "<%c,%d,%d>\n", &tmp, &move.x, &move.y);
+    Edge move;
+    sscanf(buf, "(edge %c %d %d)\n", &tmp, &move.x, &move.y);
 
     if (tmp == 'h')
         move.dir = HORIZ;
@@ -52,11 +52,17 @@ Move read_move(FILE *fp)
     return move;
 }
 
+void Node::print(FILE *fp) const
+{
+    fprintf(fp, "(node %d %d)\n", x, y);
+    fflush(fp);
+}
+
 void Board::print_horiz_edges(int y, FILE *fp) const
 {
     fprintf(fp, "+");
     for (int x = 0; x < width; ++x) {
-        if (edges[horiz_edge_index(x, y, width, height)])
+        if (edges[edge_index(Edge(HORIZ, x, y))])
             fprintf(fp, "-+");
         else
             fprintf(fp, " +");
@@ -67,18 +73,18 @@ void Board::print_horiz_edges(int y, FILE *fp) const
 void Board::print_vert_edges(int y, FILE *fp) const
 {
     for (int x = 0; x < width; ++x) {
-        if (edges[vert_edge_index(x, y, width, height)])
+        if (edges[edge_index(Edge(VERT, x, y))])
             fprintf(fp, "|");
         else
             fprintf(fp, " ");
 
-        if (degree(x, y) == 4)
+        if (degree(Node(x, y)) == 4)
             fprintf(fp, "#");
         else
             fprintf(fp, " ");
     }
 
-    if (edges[vert_edge_index(width, y, width, height)])
+    if (edges[edge_index(Edge(VERT, width, y))])
         fprintf(fp, "|\n");
     else
         fprintf(fp, " \n");
@@ -118,7 +124,7 @@ void Board::read_horiz_edges(int y, FILE *fp)
                             x, width);
                     exit(1);
                 }
-                edges[horiz_edge_index(x, y, width, height)] = true;
+                edges[edge_index(Edge(HORIZ, x, y))] = true;
                 ++x;
                 break;
             case ' ':
@@ -127,7 +133,7 @@ void Board::read_horiz_edges(int y, FILE *fp)
                             x, width);
                     exit(1);
                 }
-                edges[horiz_edge_index(x, y, width, height)] = false;
+                edges[edge_index(Edge(HORIZ, x, y))] = false;
                 ++x;
                 break;
             default:
@@ -162,7 +168,7 @@ void Board::read_vert_edges(int y, FILE *fp)
                             x, width, y);
                     exit(1);
                 }
-                edges[vert_edge_index(x, y, width, height)] = true;
+                edges[edge_index(Edge(VERT, x, y))] = true;
                 ++x;
                 break;
             case ' ':
@@ -173,7 +179,7 @@ void Board::read_vert_edges(int y, FILE *fp)
                 }
 
                 if (!reading_cell) {
-                    edges[vert_edge_index(x, y, width, height)] = false;
+                    edges[edge_index(Edge(VERT, x, y))] = false;
                     ++x;
                 }
                 break;
