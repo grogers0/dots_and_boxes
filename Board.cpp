@@ -6,7 +6,7 @@
 
 Board::Board(int width, int height) :
     width(width), height(height),
-    edges(width * (height + 1) + height * (width + 1), false),
+    edges(num_edges(), false),
     decider(NULL)
 {
     score[0] = score[1] = 0;
@@ -61,7 +61,6 @@ int Board::degree(Node node) const
             { sum += (int) edges[this->edge_index(edge)]; });
     return sum;
 }
-
 
 std::string basename_str(const std::string &str)
 {

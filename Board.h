@@ -14,17 +14,27 @@ enum Direction
 
 struct Edge
 {
-    signed x:8;
     unsigned dir:1;
-    signed y:7;
+    signed x:7;
+    signed y:8;
 
     Edge() {}
     Edge(Direction dir, int x, int y) :
-        x(x), dir(dir), y(y) {}
-    bool operator==(const Edge &edge) const
+        dir(dir), x(x), y(y) {}
+    bool operator==(Edge edge) const
     { return dir == edge.dir && x == edge.x && y == edge.y; }
-    bool operator!=(const Edge &edge) const
+    bool operator!=(Edge edge) const
     { return dir != edge.dir || x != edge.x || y != edge.y; }
+    bool operator<(Edge edge) const
+    {
+        if (dir < edge.dir) return true;
+        if (edge.dir < dir) return false;
+        if (x < edge.x) return true;
+        if (edge.x < x) return false;
+        if (y < edge.y) return true;
+        if (edge.y < y) return false;
+        return false;
+    }
 
     void print(FILE *fp) const;
 };
@@ -156,12 +166,14 @@ class Board
         int get_height() const { return height; }
 
         int edge_index(Edge edge) const;
+        int num_edges() const;
 
         bool move(int player, Edge move);
         void unmove(int player, Edge move);
         bool is_move_valid(Edge move) const;
         bool is_game_over() const;
         int get_score(int player) const { return score[player]; }
+        void reset_score() { score[0] = score[1] - 0; }
 
         int degree(Node node) const;
 
@@ -214,6 +226,11 @@ inline int Board::edge_index(Edge edge) const
         return edge.y * width + edge.x;
     else
         return width * (height + 1) + edge.y * (width + 1) + edge.x;
+}
+
+inline int Board::num_edges() const
+{
+    return width * (height + 1) + height * (width + 1);
 }
 
 template<class F>

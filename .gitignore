@@ -1,0 +1,4 @@
+*.o
+dots
+solver
+brute_force
